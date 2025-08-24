@@ -1,0 +1,31 @@
+{
+  "name": "lab01-tests",
+  "version": "1.0.0",
+  "description": "Suite de testes de estresse e segurança para servidor tradicional",
+  "main": "index.js",
+  "scripts": {
+    "test": "node run-tests.js",
+    "test:stress": "node run-tests.js --stress-only",
+    "test:security": "node run-tests.js --security-only",
+    "test:quick": "node index.js quick",
+    "test:examples": "node example-usage.js",
+    "test:auth": "node test-auth.js",
+    "help": "node index.js help",
+    "install": "npm install axios"
+  },
+  "keywords": [
+    "stress-test",
+    "security-test",
+    "rate-limiting",
+    "performance",
+    "vulnerability-scanning"
+  ],
+  "author": "Aluno PUC Minas",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^1.11.0"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}
