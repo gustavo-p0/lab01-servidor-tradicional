@@ -1,5 +1,7 @@
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
+const { logger } = require('../config/logger');
+
 
 class Database {
     constructor() {
@@ -10,7 +12,9 @@ class Database {
     async init() {
         this.db = new sqlite3.Database(this.dbPath);
         await this.createTables();
-        console.log('✅ Database inicializado');
+        logger.info('Banco de dados iniciado com sucesso', {
+            environment: process.env.NODE_ENV || 'development',
+        });
     }
 
     async createTables() {

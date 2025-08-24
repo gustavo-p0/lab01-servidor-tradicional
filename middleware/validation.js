@@ -18,7 +18,7 @@ const schemas = {
         title: Joi.string().min(1).max(200).required(),
         description: Joi.string().max(1000).allow(''),
         priority: Joi.string().valid('low', 'medium', 'high', 'urgent').default('medium')
-    })
+    }),
 };
 
 const validate = (schemaName) => (req, res, next) => {

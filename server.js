@@ -2,10 +2,13 @@ const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const helmet = require('helmet');
-const rateLimit = require('express-rate-limit');
+const swaggerUi = require('swagger-ui-express');
+const swaggerSpec = require('./config/swagger');
+const { adaptiveRateLimit } = require('./middleware/rateLimit');
 
-const config = require('./config/database');
+const config = require('./config');
 const database = require('./database/database');
+const { logger, requestLogger } = require('./config/logger');
 const authRoutes = require('./routes/auth');
 const taskRoutes = require('./routes/tasks');
 
@@ -22,18 +25,18 @@ const app = express();
 
 // Middleware de segurança
 app.use(helmet());
-app.use(rateLimit(config.rateLimit));
+
 app.use(cors());
 
 // Parsing de dados
 app.use(bodyParser.json({ limit: '10mb' }));
 app.use(bodyParser.urlencoded({ extended: true }));
 
-// Logging de requisições
-app.use((req, res, next) => {
-    console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
-    next();
-});
+// Logging estruturado de requisições
+app.use(requestLogger);
+
+// Rate limiting adaptativo para rotas públicas
+app.use(adaptiveRateLimit);
 
 // Rotas principais
 app.get('/', (req, res) => {
@@ -43,7 +46,29 @@ app.get('/', (req, res) => {
         architecture: 'Traditional Client-Server',
         endpoints: {
             auth: ['POST /api/auth/register', 'POST /api/auth/login'],
-            tasks: ['GET /api/tasks', 'POST /api/tasks', 'PUT /api/tasks/:id', 'DELETE /api/tasks/:id']
+            tasks: [
+                'GET /api/tasks - Listar tarefas com filtros avançados',
+                'POST /api/tasks - Criar tarefa',
+                'GET /api/tasks/:id - Buscar tarefa por ID',
+                'PUT /api/tasks/:id - Atualizar tarefa',
+                'DELETE /api/tasks/:id - Deletar tarefa',
+                'GET /api/tasks/stats/summary - Estatísticas do usuário'
+            ]
+        },
+        filters: {
+            'GET /api/tasks': {
+                query: {
+                    completed: 'boolean (true/false)',
+                    priority: 'string ou array (high,medium,low)',
+                    search: 'string (busca em título e descrição)',
+                    startDate: 'YYYY-MM-DD',
+                    endDate: 'YYYY-MM-DD',
+                    sortBy: 'createdAt|title|priority|completed',
+                    sortOrder: 'ASC|DESC',
+                    page: 'number (padrão: 1)',
+                    limit: 'number (padrão: 20)'
+                }
+            }
         }
     });
 });
@@ -61,6 +86,13 @@ app.get('/health', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/tasks', taskRoutes);
 
+
+// Swagger UI
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+  customCss: '.swagger-ui .topbar { display: none }',
+  customSiteTitle: 'Task Management API - Documentação'
+}));
+
 // 404 handler
 app.use((req, res) => {
     res.status(404).json({
@@ -71,7 +103,13 @@ app.use((req, res) => {
 
 // Error handler global
 app.use((error, req, res, next) => {
-    console.error('Erro:', error);
+    logger.error('Erro global', error, {
+        url: req.url,
+        method: req.method,
+        ip: req.ip,
+        userId: req.user?.id
+    });
+    
     res.status(500).json({
         success: false,
         message: 'Erro interno do servidor'
@@ -84,14 +122,30 @@ async function startServer() {
         await database.init();
         
         app.listen(config.port, () => {
-            console.log('🚀 =================================');
-            console.log(`🚀 Servidor iniciado na porta ${config.port}`);
-            console.log(`🚀 URL: http://localhost:${config.port}`);
-            console.log(`🚀 Health: http://localhost:${config.port}/health`);
-            console.log('🚀 =================================');
+            logger.info('Servidor iniciado com sucesso', {
+                port: config.port,
+                environment: process.env.NODE_ENV || 'development',
+                uptime: process.uptime()
+            });
+        logger.info('Health check endpoint disponível', {
+            path: '/health',
+            method: 'GET',
+            description: 'Retorna status 200 e mensagem simples para verificação de saúde do serviço',
+            environment: process.env.NODE_ENV || 'development',
+            port: config.port
+        });
+        const swaggerUrl = `http://localhost:${config.port}/api-docs`;
+        logger.info(`Swagger API docs disponível: ${swaggerUrl}`, {
+            path: '/api-docs',
+            url: swaggerUrl,
+            method: 'GET',
+            description: 'Interface interativa de documentação da API',
+            environment: process.env.NODE_ENV || 'development',
+            port: config.port
+        });
         });
     } catch (error) {
-        console.error('❌ Falha na inicialização:', error);
+        logger.error('Falha na inicialização do servidor', error);
         process.exit(1);
     }
 }
