@@ -36,6 +36,34 @@ curl -X GET http://localhost:3000/api/tasks \
   -H "Authorization: Bearer SEU_TOKEN_AQUI"
 ```
 
+### 8.3 Teste de Carga com Apache Bench
+
+#### Instalação
+```bash
+# Ubuntu/Debian
+sudo apt install apache2-utils
+
+# macOS
+brew install httpd
+```
+
+#### Comando de Teste de Carga Extrema
+```bash
+# Teste com 100.000 requests e 20.000 simultâneos (máximo)
+ab -n 100000 -c 20000 \
+  -H "Authorization: Bearer SEU_TOKEN_JWT_AQUI" \
+  http://localhost:3000/api/tasks
+```
+
+#### Parâmetros do Teste
+- `-n 100000`: Total de requests
+- `-c 20000`: Requests simultâneos (concurrent) - máximo suportado
+- `-H`: Header de autorização com token JWT
+- `-v 2`: Para mais detalhes durante o teste (opcional)
+
+#### Resultados Esperados
+Este teste simula carga extrema que sistemas tradicionais monolíticos têm dificuldade para suportar, demonstrando a necessidade de arquiteturas mais robustas para aplicações de alta escala.
+
 ---
 
 ## **PASSO 9: Análise e Documentação**
@@ -71,20 +99,7 @@ curl -X GET http://localhost:3000/api/tasks \
 
 ## Exercícios Complementares
 
-1. **Implementar Paginação**: Adicionar suporte a paginação na listagem de tarefas
-2. **Cache em Memória**: Implementar cache simples para consultas frequentes
-3. **Logs Estruturados**: Adicionar sistema de logging mais robusto
-4. **Rate Limiting por Usuário**: Implementar limites específicos por usuário
-5. **Filtros Avançados**: Adicionar filtros por data, categoria, tags
-
-## Entregáveis
-
-- [ ] Código fonte completo e funcional
-- [ ] API REST com todas as operações CRUD
-- [ ] Sistema de autenticação JWT
-- [ ] Documentação da API (endpoints e payloads)
-- [ ] Análise de performance básica
-- [ ] Identificação de limitações arquiteturais
+Algumas atividades serão propostas para serem realizadas no código original, confira a descrição das tarefas na pasta docs neste repositório.
 
 ## Comandos de Execução
 
@@ -115,10 +130,3 @@ Este roteiro estabelece a **base arquitetural** para os laboratórios seguintes:
 - **Roteiro 3**: Decomposição em microsserviços (escalabilidade e resiliência)  
 - **Roteiro 4**: Implementação serverless (auto-scaling e zero-ops)
 
-### Questões para Responder
-
-1. **Escalabilidade**: Como esta arquitetura se comportaria com 1000 usuários simultâneos?
-2. **Disponibilidade**: Quais são os pontos de falha identificados?
-3. **Performance**: Onde estão os possíveis gargalos do sistema?
-4. **Manutenção**: Como seria o processo de atualização em produção?
-5. **Evolução**: Que mudanças seriam necessárias para suportar múltiplas regiões?
